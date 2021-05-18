@@ -103,29 +103,29 @@ extension  YPVideoCaptureHelper :  YPPhotoCapture, AVCapturePhotoCaptureDelegate
 //        }
         return settings
     }
-    func setupPhotoCaptureSession() {
-//        session = AVCaptureSession()
-        
-       session.beginConfiguration()
-       session.sessionPreset = .photo
-       let cameraPosition: AVCaptureDevice.Position = YPConfig.usesFrontCamera ? .front : .back
-       let aDevice = deviceForPosition(cameraPosition)
-       if let d = aDevice {
-           deviceInput = try? AVCaptureDeviceInput(device: d)
-       }
-       if let videoInput = deviceInput {
-           if session.canAddInput(videoInput) {
-               session.addInput(videoInput)
-           }
-           if session.canAddOutput(output) {
-               session.addOutput(output)
-               configure()
-           }
-       }
-//        configure()
-       session.commitConfiguration()
-       isCaptureSessionSetup = true
-   }
+//    func setupPhotoCaptureSession() {
+////        session = AVCaptureSession()
+//
+//       session.beginConfiguration()
+//       session.sessionPreset = .photo
+//       let cameraPosition: AVCaptureDevice.Position = YPConfig.usesFrontCamera ? .front : .back
+//       let aDevice = deviceForPosition(cameraPosition)
+//       if let d = aDevice {
+//           deviceInput = try? AVCaptureDeviceInput(device: d)
+//       }
+//       if let videoInput = deviceInput {
+//           if session.canAddInput(videoInput) {
+//               session.addInput(videoInput)
+//           }
+//           if session.canAddOutput(output) {
+//               session.addOutput(output)
+//               configure()
+//           }
+//       }
+////        configure()
+//       session.commitConfiguration()
+//       isCaptureSessionSetup = true
+//   }
 }
 //////////
 ///........
@@ -176,7 +176,7 @@ class YPVideoCaptureHelper: NSObject {
             }
             if !strongSelf.isCaptureSessionSetup {
                 strongSelf.setupCaptureSession()
-                strongSelf.setupPhotoCaptureSession()
+//                strongSelf.setupPhotoCaptureSession()
             }
             strongSelf.startCamera(completion: {
                 completion()
@@ -404,9 +404,37 @@ class YPVideoCaptureHelper: NSObject {
     }
       func setupCaptureSession() {
         session.beginConfiguration()
+        ////
+//        let cameraPosition: AVCaptureDevice.Position = YPConfig.usesFrontCamera ? .front : .back
+//        let aDevice = deviceForPosition(.back)///deviceForPosition(cameraPosition)
+//        if let d = aDevice {
+//            deviceInput = try? AVCaptureDeviceInput(device: d)
+//        }
+//        if let videoInput = deviceInput {
+//            if session.canAddInput(videoInput) {
+//                session.addInput(videoInput)
+//            }
+//            if session.canAddOutput(output) {
+//                session.addOutput(output)
+//                configure()
+//            }
+//        }
+        ///
         let aDevice = deviceForPosition(.back)
         if let d = aDevice {
             videoInput = try? AVCaptureDeviceInput(device: d)
+            deviceInput = try? AVCaptureDeviceInput(device: d)
+        }
+        
+        if let videoInput = deviceInput {
+            if session.canAddInput(videoInput) {
+                session.addInput(videoInput)
+            }
+            if session.canAddOutput(output) {
+                session.addOutput(output)
+                configure()
+            }
+            session.sessionPreset = .photo
         }
         
         if let videoInput = videoInput {

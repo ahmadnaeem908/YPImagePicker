@@ -97,6 +97,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     // MARK: - View LifeCycle
     
     override public func loadView() { view = v }
+    var volumeButtonHandler : VolumeButtonHandler!
     
     override public func viewDidLoad() {
         super.viewDidLoad()
@@ -111,8 +112,89 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
         // Zoom
         let pinchRecongizer = UIPinchGestureRecognizer(target: self, action: #selector(self.pinch(_:)))
         v.previewViewContainer.addGestureRecognizer(pinchRecongizer)
+        
+        self.volumeButtonHandler = VolumeButtonHandler(containerView: self.view)
+        volumeButtonHandler.buttonClosure = {[weak self] button in
+            // ...
+            self?.volumeButtonControlls(button:button)
+            
+        }
+        volumeButtonHandler.start()
+        /*
+         so here we will use
+         a timer we will call shoot after 0.2 sec and if the volume is 0
+         if volume is 1 then we will start the recording and add timer that will stop the recording after 0.2 sec
+         also need to have button so if it is up and then we get dwon we will stop every thing
+         */
     }
-
+    func volumeButtonControlls(button: VolumeButtonHandler.Button){
+        photoTimer?.invalidate()
+        if volumeButtonTapped == nil{
+            volumeButtonTapped = button
+        }
+//        else if  volumeButtonTapped != button,videoTimer != nil{
+////            videoTimer?.invalidate()
+//            print("123# stop recording ")
+//            return
+//        }
+        // ...
+//        switch button {
+//
+//        case .up:
+//
+//         let t =   Timer.scheduledTimer(withTimeInterval: 0.2, repeats: false) { (_) in
+//
+//            }
+//            volumeTap += 1
+//        case .down:
+//            volumeTap -= 1
+//        }
+//        photoTimer?.invalidate()
+        if volumeTap == 0 {
+            print("123# photoTimer")
+            photoTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) {[weak self] (_) in
+                print("123# take photo")
+                
+                self?.doAfterPermissionCheck {
+                    if self?.volumeTap == 1 {
+                        self?.shoot()
+                    }
+                    
+                }
+            }
+        }
+//        else if volumeTap > 1 {
+//            print("123# start recording ")
+//            if videoTimer == nil {
+//                self.videoHelper.setupCaptureSession()
+//                print("123# video long press  began" )
+//                Timer.scheduledTimer(withTimeInterval: 0.01, repeats: false) { (_) in
+//
+//                    self.doAfterPermissionCheck { [weak self] in
+//                        self?.toggleRecording()
+//                    }
+//                }
+//            }
+//            videoTimer?.invalidate()
+//            videoTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) {[weak self] (_) in
+//                print("123# stop recording ")
+//                self?.doAfterPermissionCheck {
+//                    self?.toggleRecording()
+//                }
+//            }
+//        }
+//        let currentDate = Date()
+//        print("123# time diff =" , currentDate-lastDate)
+//        lastDate = currentDate
+           volumeTap += 1
+    }
+    var lastDate : Date = Date()
+    var volumeButtonTapped : VolumeButtonHandler.Button!
+    var photoTimer: Timer!
+    var videoTimer: Timer!
+    
+var volumeTap = 0
+    
     func start() {
         v.shotButton.isEnabled = false
         doAfterPermissionCheck { [weak self] in
@@ -157,26 +239,23 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     
     @objc func handleLongPress(gestureReconizer: UILongPressGestureRecognizer) {
         if gestureReconizer.state ==  .began {
-       
- 
-            UIView.animate(withDuration: 0.3) {
-                self.videoHelper.setupCaptureSession()
-                print("video long press  began" )
-                Timer.scheduledTimer(withTimeInterval: 0.01, repeats: false) { (_) in
-                    
-                    self.doAfterPermissionCheck { [weak self] in
-                        self?.toggleRecording()
-                    }
-                }
+            
+            print("video long press  began" )
+            self.doAfterPermissionCheck { [weak self] in
+                self?.toggleRecording()
             }
-          
             
         }  else if  gestureReconizer.state ==  .ended  {
             //When lognpress is finish
-            doAfterPermissionCheck { [weak self] in
-                self?.toggleRecording()
+            if  videoHelper.isRecording == false{
+                
+            }else{
+                doAfterPermissionCheck { [weak self] in
+                    self?.toggleRecording()
+                }
+                print("video long press  ended" )
             }
-            print("video long press  ended" )
+            
         }
         
     }
@@ -349,4 +428,12 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
             return .noFlash
         }
     }
+}
+
+extension Date {
+
+    static func - (lhs: Date, rhs: Date) -> TimeInterval {
+        return lhs.timeIntervalSinceReferenceDate - rhs.timeIntervalSinceReferenceDate
+    }
+
 }

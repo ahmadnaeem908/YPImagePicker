@@ -11,7 +11,7 @@ import UIKit
 public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     
     public var didCaptureVideo: ((URL) -> Void)?
-    
+    public var didCapturePhoto: ((UIImage) -> Void)?
     private let videoHelper = YPVideoCaptureHelper()
     private let v = YPCameraView(overlayView: nil)
     private var viewState = ViewState()
@@ -27,6 +27,17 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
             self?.didCaptureVideo?(videoURL)
             self?.resetVisualState()
         }
+        
+        videoHelper.didCapturePhoto = { [weak self] image in
+            self?.didCapturePhoto?(image)
+            let i = image
+            print(i)
+//            self?.resetVisualState()
+        }
+//        self.didCapturePhoto{ image in
+//            let i = image
+//            print(image)
+//        }
         videoHelper.videoRecordingProgress = { [weak self] progress, timeElapsed in
             self?.updateState {
                 $0.progress = progress
@@ -35,6 +46,54 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
         }
     }
     
+    func shoot() {
+        // Prevent from tapping multiple times in a row
+        // causing a crash
+//        videoHelper.setupPhotoCaptureSession()
+        v.shotButton.isEnabled = false
+        
+        videoHelper.shoot { imageData in
+            
+            guard let shotImage = UIImage(data: imageData) else {
+                return
+            }
+            
+            self.stopCamera()
+            
+            var image = shotImage
+            // Crop the image if the output needs to be square.
+//            if YPConfig.onlySquareImagesFromCamera {
+//                image = self.cropImageToSquare(image)
+//            }
+
+            // Flip image if taken form the front camera.
+            if let device = self.videoHelper.device, device.position == .front {
+                image = flipImage(image: image)
+            }
+            
+            DispatchQueue.main.async {
+                let noOrietationImage = image.resetOrientation()
+                let capturedImage = noOrietationImage
+                print(capturedImage)
+                self.didCapturePhoto?(noOrietationImage )
+            }
+        }
+        func flipImage(image: UIImage!) -> UIImage! {
+            let imageSize: CGSize = image.size
+            UIGraphicsBeginImageContextWithOptions(imageSize, true, 1.0)
+            let ctx = UIGraphicsGetCurrentContext()!
+            ctx.rotate(by: CGFloat(Double.pi/2.0))
+            ctx.translateBy(x: 0, y: -imageSize.width)
+            ctx.scaleBy(x: imageSize.height/imageSize.width, y: imageSize.width/imageSize.height)
+            ctx.draw(image.cgImage!, in: CGRect(x: 0.0,
+                                                y: 0.0,
+                                                width: imageSize.width,
+                                                height: imageSize.height))
+            let newImage: UIImage = UIGraphicsGetImageFromCurrentImageContext()!
+            UIGraphicsEndImageContext()
+            return newImage
+        }
+    }
     // MARK: - View LifeCycle
     
     override public func loadView() { view = v }
@@ -91,8 +150,36 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
         v.flashButton.addTarget(self, action: #selector(flashButtonTapped), for: .touchUpInside)
         v.shotButton.addTarget(self, action: #selector(shotButtonTapped), for: .touchUpInside)
         v.flipButton.addTarget(self, action: #selector(flipButtonTapped), for: .touchUpInside)
+        
+        let longGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress))
+        v.shotButton.addGestureRecognizer(longGesture)
     }
     
+    @objc func handleLongPress(gestureReconizer: UILongPressGestureRecognizer) {
+        if gestureReconizer.state ==  .began {
+       
+ 
+            UIView.animate(withDuration: 0.3) {
+                self.videoHelper.setupCaptureSession()
+                print("video long press  began" )
+                Timer.scheduledTimer(withTimeInterval: 0.01, repeats: false) { (_) in
+                    
+                    self.doAfterPermissionCheck { [weak self] in
+                        self?.toggleRecording()
+                    }
+                }
+            }
+          
+            
+        }  else if  gestureReconizer.state ==  .ended  {
+            //When lognpress is finish
+            doAfterPermissionCheck { [weak self] in
+                self?.toggleRecording()
+            }
+            print("video long press  ended" )
+        }
+        
+    }
     // MARK: - Flip Camera
     
     @objc
@@ -124,8 +211,11 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     
     @objc
     func shotButtonTapped() {
+//        doAfterPermissionCheck { [weak self] in
+//            self?.toggleRecording()
+//        }
         doAfterPermissionCheck { [weak self] in
-            self?.toggleRecording()
+            self?.shoot()
         }
     }
     

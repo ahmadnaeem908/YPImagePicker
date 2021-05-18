@@ -80,6 +80,11 @@ open class YPPickerVC: YPBottomPager, YPBottomPagerDelegate {
                                            videoURL: videoURL,
                                            fromCamera: true))])
             }
+            videoVC?.didCapturePhoto = { [weak self] img in
+                self?.didSelectItems?([YPMediaItem.photo(p: YPMediaPhoto(image: img,
+                                                                        fromCamera: true))])
+            }
+
         }
         
         // Show screens

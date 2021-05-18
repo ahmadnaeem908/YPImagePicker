@@ -9,26 +9,161 @@
 import UIKit
 import AVFoundation
 import CoreMotion
+extension  YPVideoCaptureHelper :  YPPhotoCapture, AVCapturePhotoCaptureDelegate{
+    func tryToggleFlash() {
+        // if device.hasFlash device.isFlashAvailable //TODO test these
+        switch currentFlashMode {
+        case .auto:
+            currentFlashMode = .on
+        case .on:
+            currentFlashMode = .off
+        case .off:
+            currentFlashMode = .auto
+        }
+    }
+    
+    var hasFlash: Bool {
+        guard let device = device else { return false }
+        return device.hasFlash
+    }
+     
+    func shoot(completion: @escaping (Data) -> Void) {
+        block = completion
+        setCurrentOrienation()
+        let settings = newSettings()
+        photoOutput.capturePhoto(with: settings, delegate: self)
+    }
 
+    @available(iOS 11.0, *)
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        guard let data = photo.fileDataRepresentation() else { return }
+        block?(data)
+    }
+        
+    func photoOutput(_ output: AVCapturePhotoOutput,
+                     didFinishProcessingPhoto photoSampleBuffer: CMSampleBuffer?,
+                     previewPhoto previewPhotoSampleBuffer: CMSampleBuffer?,
+                     resolvedSettings: AVCaptureResolvedPhotoSettings,
+                     bracketSettings: AVCaptureBracketedStillImageSettings?,
+                     error: Error?) {
+        guard let buffer = photoSampleBuffer else { return }
+        if let data = AVCapturePhotoOutput
+            .jpegPhotoDataRepresentation(forJPEGSampleBuffer: buffer,
+                                         previewPhotoSampleBuffer: previewPhotoSampleBuffer) {
+            block?(data)
+        }
+    }
+    
+     
+    var device: AVCaptureDevice? { return deviceInput?.device }
+    var output: AVCaptureOutput { return photoOutput }
+    
+    
+    func configure() {
+        photoOutput.isHighResolutionCaptureEnabled = true
+        
+        // Improve capture time by preparing output with the desired settings.
+        photoOutput.setPreparedPhotoSettingsArray([newSettings()], completionHandler: nil)
+        
+    }
+    
+    private func newSettings() -> AVCapturePhotoSettings {
+        var settings = AVCapturePhotoSettings()
+        
+        // Catpure Heif when available.
+        if #available(iOS 11.0, *) {
+            if photoOutput.availablePhotoCodecTypes.contains(.hevc) {
+                settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.hevc])
+            }
+        }
+        
+        // Catpure Highest Quality possible.
+        settings.isHighResolutionPhotoEnabled = true
+        
+        // Set flash mode.
+//        if let deviceInput = deviceInput {
+//            if deviceInput.device.isFlashAvailable {
+                switch currentTorchMode() {
+                case .auto:
+                    if photoOutput.__supportedFlashModes.contains(NSNumber(value: AVCaptureDevice.FlashMode.auto.rawValue)) {
+                        settings.flashMode = .auto
+                    }
+                case .off:
+                    if photoOutput.__supportedFlashModes.contains(NSNumber(value: AVCaptureDevice.FlashMode.off.rawValue)) {
+                        settings.flashMode = .off
+                    }
+                case .on:
+                    if photoOutput.__supportedFlashModes.contains(NSNumber(value: AVCaptureDevice.FlashMode.on.rawValue)) {
+                        settings.flashMode = .on
+                    }
+                @unknown default:
+                    fatalError("currentTorchMode in correct")
+                }
+//            }
+//        }
+        return settings
+    }
+    func setupPhotoCaptureSession() {
+//        session = AVCaptureSession()
+        
+       session.beginConfiguration()
+       session.sessionPreset = .photo
+       let cameraPosition: AVCaptureDevice.Position = YPConfig.usesFrontCamera ? .front : .back
+       let aDevice = deviceForPosition(cameraPosition)
+       if let d = aDevice {
+           deviceInput = try? AVCaptureDeviceInput(device: d)
+       }
+       if let videoInput = deviceInput {
+           if session.canAddInput(videoInput) {
+               session.addInput(videoInput)
+           }
+           if session.canAddOutput(output) {
+               session.addOutput(output)
+               configure()
+           }
+       }
+//        configure()
+       session.commitConfiguration()
+       isCaptureSessionSetup = true
+   }
+}
+//////////
+///........
+////////////
+///////////
+////
+////
+////
+////
+////
 /// Abstracts Low Level AVFoudation details.
 class YPVideoCaptureHelper: NSObject {
+    ///Image
     
+    var currentFlashMode: YPFlashMode = .off
+    var videoLayer: AVCaptureVideoPreviewLayer!
+    private let photoOutput = AVCapturePhotoOutput()
+    var deviceInput: AVCaptureDeviceInput?
+    var block: ((Data) -> Void)?
+    public var didCapturePhoto: ((UIImage) -> Void)?
+    ///////
     public var isRecording: Bool { return videoOutput.isRecording }
     public var didCaptureVideo: ((URL) -> Void)?
     public var videoRecordingProgress: ((Float, TimeInterval) -> Void)?
     
-    private let session = AVCaptureSession()
+    var session = AVCaptureSession()
+    internal let sessionPhoto = AVCaptureSession()
     private var timer = Timer()
     private var dateVideoStarted = Date()
-    private let sessionQueue = DispatchQueue(label: "YPVideoVCSerialQueue")
+    internal let sessionQueue = DispatchQueue(label: "YPVideoVCSerialQueue")
     private var videoInput: AVCaptureDeviceInput?
     private var videoOutput = AVCaptureMovieFileOutput()
     private var videoRecordingTimeLimit: TimeInterval = 0
-    private var isCaptureSessionSetup: Bool = false
-    private var isPreviewSetup = false
-    private var previewView: UIView!
+    internal var isCaptureSessionSetup: Bool = false
+    internal var isPreviewSetup = false
+    internal var previewView: UIView!
     private var motionManager = CMMotionManager()
-    private var initVideoZoomFactor: CGFloat = 1.0
+    internal var initVideoZoomFactor: CGFloat = 1.0
     
     // MARK: - Init
     
@@ -41,6 +176,7 @@ class YPVideoCaptureHelper: NSObject {
             }
             if !strongSelf.isCaptureSessionSetup {
                 strongSelf.setupCaptureSession()
+                strongSelf.setupPhotoCaptureSession()
             }
             strongSelf.startCamera(completion: {
                 completion()
@@ -61,6 +197,23 @@ class YPVideoCaptureHelper: NSObject {
                     self?.session.stopRunning()
                 case .authorized:
                     self?.session.startRunning()
+                    completion()
+                    self?.tryToSetupPreview()
+                @unknown default:
+                    fatalError()
+                }
+            }
+        }
+        if !sessionPhoto.isRunning {
+            sessionQueue.async { [weak self] in
+                // Re-apply session preset
+                self?.sessionPhoto.sessionPreset = .photo
+                let status = AVCaptureDevice.authorizationStatus(for: AVMediaType.video)
+                switch status {
+                case .notDetermined, .restricted, .denied:
+                    self?.sessionPhoto.stopRunning()
+                case .authorized:
+                    self?.sessionPhoto.startRunning()
                     completion()
                     self?.tryToSetupPreview()
                 @unknown default:
@@ -155,6 +308,11 @@ class YPVideoCaptureHelper: NSObject {
                 self?.session.stopRunning()
             }
         }
+        if sessionPhoto.isRunning {
+            sessionQueue.async { [weak self] in
+                self?.sessionPhoto.stopRunning()
+            }
+        }
     }
     
     // MARK: - Torch
@@ -201,8 +359,50 @@ class YPVideoCaptureHelper: NSObject {
     }
     
     // Private
-    
-    private func setupCaptureSession() {
+   func getDetupCaptureSession() -> AVCaptureSession {
+        let session = AVCaptureSession()
+        session.beginConfiguration()
+        let aDevice = deviceForPosition(.back)
+        if let d = aDevice {
+            videoInput = try? AVCaptureDeviceInput(device: d)
+        }
+        
+        if let videoInput = videoInput {
+            if session.canAddInput(videoInput) {
+                session.addInput(videoInput)
+            }
+            
+            // Add audio recording
+            for device in AVCaptureDevice.devices(for: .audio) {
+                if let audioInput = try? AVCaptureDeviceInput(device: device) {
+                    if session.canAddInput(audioInput) {
+                        session.addInput(audioInput)
+                    }
+                }
+            }
+            
+            let timeScale: Int32 = 30 // FPS
+            let maxDuration =
+                CMTimeMakeWithSeconds(self.videoRecordingTimeLimit, preferredTimescale: timeScale)
+            videoOutput.maxRecordedDuration = maxDuration
+            if let sizeLimit = YPConfig.video.recordingSizeLimit {
+                videoOutput.maxRecordedFileSize = sizeLimit
+            }
+            videoOutput.minFreeDiskSpaceLimit = YPConfig.video.minFreeDiskSpaceLimit
+            if YPConfig.video.fileType == .mp4,
+               YPConfig.video.recordingSizeLimit != nil {
+                videoOutput.movieFragmentInterval = .invalid // Allows audio for MP4s over 10 seconds.
+            }
+            if session.canAddOutput(videoOutput) {
+                session.addOutput(videoOutput)
+            }
+            session.sessionPreset = .high
+        }
+        session.commitConfiguration()
+        isCaptureSessionSetup = true
+    return session
+    }
+      func setupCaptureSession() {
         session.beginConfiguration()
         let aDevice = deviceForPosition(.back)
         if let d = aDevice {

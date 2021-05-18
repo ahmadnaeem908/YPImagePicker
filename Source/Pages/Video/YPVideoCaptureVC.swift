@@ -67,7 +67,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
 //            }
 
             // Flip image if taken form the front camera.
-            if let device = self.videoHelper.device, device.position == .front {
+            if let device = self.videoHelper.videoInput?.device, device.position == .front {
                 image = flipImage(image: image)
             }
             

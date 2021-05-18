@@ -156,7 +156,7 @@ class YPVideoCaptureHelper: NSObject {
     private var timer = Timer()
     private var dateVideoStarted = Date()
     internal let sessionQueue = DispatchQueue(label: "YPVideoVCSerialQueue")
-    private var videoInput: AVCaptureDeviceInput?
+    private (set) var videoInput: AVCaptureDeviceInput?
     private var videoOutput = AVCaptureMovieFileOutput()
     private var videoRecordingTimeLimit: TimeInterval = 0
     internal var isCaptureSessionSetup: Bool = false

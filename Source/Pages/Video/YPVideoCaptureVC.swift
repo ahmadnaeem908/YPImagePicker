@@ -97,7 +97,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     // MARK: - View LifeCycle
     
     override public func loadView() { view = v }
-    var volumeButtonHandler : VolumeButtonHandler!
+    var volumeButtonHandler : VolumeButtonHandler?
     
     override public func viewDidLoad() {
         super.viewDidLoad()
@@ -113,13 +113,8 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
         let pinchRecongizer = UIPinchGestureRecognizer(target: self, action: #selector(self.pinch(_:)))
         v.previewViewContainer.addGestureRecognizer(pinchRecongizer)
         
-        self.volumeButtonHandler = VolumeButtonHandler(containerView: self.view)
-        volumeButtonHandler.buttonClosure = {[weak self] button in
-            // ...
-            self?.volumeButtonControlls(button:button)
-            
-        }
-        volumeButtonHandler.start()
+       
+        
         /*
          so here we will use
          a timer we will call shoot after 0.2 sec and if the volume is 0
@@ -193,9 +188,22 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     var photoTimer: Timer!
     var videoTimer: Timer!
     
+    func startvolumeButtonListener() {
+        if volumeButtonHandler?.isStarted != true {
+            self.volumeButtonHandler = VolumeButtonHandler(containerView: self.view)
+            self.volumeButtonHandler?.buttonClosure = {[weak self] button in
+                // ...
+                self?.volumeButtonControlls(button:button)
+                
+            }
+            volumeButtonHandler?.start()
+        }
+    }
+    
 var volumeTap = 0
     
     func start() {
+        startvolumeButtonListener()
         v.shotButton.isEnabled = false
         doAfterPermissionCheck { [weak self] in
             guard let strongSelf = self else {
@@ -327,6 +335,8 @@ var volumeTap = 0
     }
 
     public func stopCamera() {
+        volumeButtonHandler?.stop()
+        volumeButtonHandler = nil
         videoHelper.stopCamera()
     }
     

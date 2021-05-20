@@ -52,13 +52,13 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
 //        videoHelper.setupPhotoCaptureSession()
         v.shotButton.isEnabled = false
         
-        videoHelper.shoot { imageData in
+        videoHelper.shoot {[weak self] imageData in
             
             guard let shotImage = UIImage(data: imageData) else {
                 return
             }
             
-            self.stopCamera()
+            self?.stopCamera()
             
             var image = shotImage
             // Crop the image if the output needs to be square.
@@ -67,7 +67,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
 //            }
 
             // Flip image if taken form the front camera.
-            if let device = self.videoHelper.videoInput?.device, device.position == .front {
+            if let device = self?.videoHelper.videoInput?.device, device.position == .front {
                 image = flipImage(image: image)
             }
             
@@ -75,7 +75,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
                 let noOrietationImage = image.resetOrientation()
                 let capturedImage = noOrietationImage
                 print(capturedImage)
-                self.didCapturePhoto?(noOrietationImage )
+                self?.didCapturePhoto?(noOrietationImage )
             }
         }
         func flipImage(image: UIImage!) -> UIImage! {
@@ -97,7 +97,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     // MARK: - View LifeCycle
     
     override public func loadView() { view = v }
-    var volumeButtonHandler : VolumeButtonHandler?
+  
     
     override public func viewDidLoad() {
         super.viewDidLoad()
@@ -112,92 +112,38 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
         // Zoom
         let pinchRecongizer = UIPinchGestureRecognizer(target: self, action: #selector(self.pinch(_:)))
         v.previewViewContainer.addGestureRecognizer(pinchRecongizer)
-        
-       
-        
-        /*
-         so here we will use
-         a timer we will call shoot after 0.2 sec and if the volume is 0
-         if volume is 1 then we will start the recording and add timer that will stop the recording after 0.2 sec
-         also need to have button so if it is up and then we get dwon we will stop every thing
-         */
+         
     }
-    func volumeButtonControlls(button: VolumeButtonHandler.Button){
-        photoTimer?.invalidate()
-        if volumeButtonTapped == nil{
-            volumeButtonTapped = button
+    
+   
+    var photoTimer: Timer!
+    var videoTimer: Timer!
+    
+    func startvolumeButtonListener() {
+        VolumeListener.shared.add(containerView: self.view) {[weak self] volume in
+            self?.volumeTapped(volume : volume)
         }
-//        else if  volumeButtonTapped != button,videoTimer != nil{
-////            videoTimer?.invalidate()
-//            print("123# stop recording ")
-//            return
-//        }
-        // ...
-//        switch button {
-//
-//        case .up:
-//
-//         let t =   Timer.scheduledTimer(withTimeInterval: 0.2, repeats: false) { (_) in
-//
-//            }
-//            volumeTap += 1
-//        case .down:
-//            volumeTap -= 1
-//        }
-//        photoTimer?.invalidate()
+    }
+    deinit{
+        print("YPVideoCaptureVC deinit called")
+    }
+    func volumeTapped(volume : Float) {
+        
         if volumeTap == 0 {
+            photoTimer?.invalidate()
             print("123# photoTimer")
             photoTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) {[weak self] (_) in
                 print("123# take photo")
                 
                 self?.doAfterPermissionCheck {
-                    if self?.volumeTap == 1 {
+//                    if self?.volumeTap == 1 {
                         self?.shoot()
-                    }
-                    
+//                    }
+
                 }
             }
         }
-//        else if volumeTap > 1 {
-//            print("123# start recording ")
-//            if videoTimer == nil {
-//                self.videoHelper.setupCaptureSession()
-//                print("123# video long press  began" )
-//                Timer.scheduledTimer(withTimeInterval: 0.01, repeats: false) { (_) in
-//
-//                    self.doAfterPermissionCheck { [weak self] in
-//                        self?.toggleRecording()
-//                    }
-//                }
-//            }
-//            videoTimer?.invalidate()
-//            videoTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) {[weak self] (_) in
-//                print("123# stop recording ")
-//                self?.doAfterPermissionCheck {
-//                    self?.toggleRecording()
-//                }
-//            }
-//        }
-//        let currentDate = Date()
-//        print("123# time diff =" , currentDate-lastDate)
-//        lastDate = currentDate
-           volumeTap += 1
-    }
-    var lastDate : Date = Date()
-    var volumeButtonTapped : VolumeButtonHandler.Button!
-    var photoTimer: Timer!
-    var videoTimer: Timer!
-    
-    func startvolumeButtonListener() {
-        if volumeButtonHandler?.isStarted != true {
-            self.volumeButtonHandler = VolumeButtonHandler(containerView: self.view)
-            self.volumeButtonHandler?.buttonClosure = {[weak self] button in
-                // ...
-                self?.volumeButtonControlls(button:button)
-                
-            }
-            volumeButtonHandler?.start()
-        }
+        volumeTap += 1
     }
     
 var volumeTap = 0
@@ -220,6 +166,10 @@ var volumeTap = 0
         }
     }
     
+    public func stopCamera() {
+        VolumeListener.shared.remove()
+        videoHelper.stopCamera()
+    }
     func refreshState() {
         // Init view state with video helper's state
         updateState {
@@ -334,11 +284,6 @@ var volumeTap = 0
         }
     }
 
-    public func stopCamera() {
-        volumeButtonHandler?.stop()
-        volumeButtonHandler = nil
-        videoHelper.stopCamera()
-    }
     
     // MARK: - Focus
     

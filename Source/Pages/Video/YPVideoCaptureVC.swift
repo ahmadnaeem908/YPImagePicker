@@ -30,14 +30,8 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
         
         videoHelper.didCapturePhoto = { [weak self] image in
             self?.didCapturePhoto?(image)
-            let i = image
-            print(i)
 //            self?.resetVisualState()
         }
-//        self.didCapturePhoto{ image in
-//            let i = image
-//            print(image)
-//        }
         videoHelper.videoRecordingProgress = { [weak self] progress, timeElapsed in
             self?.updateState {
                 $0.progress = progress
@@ -116,40 +110,8 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     }
     
    
-    var photoTimer: Timer!
-    var videoTimer: Timer!
-    
-    func startvolumeButtonListener() {
-        VolumeListener.shared.add(containerView: self.view) {[weak self] volume in
-            self?.volumeTapped(volume : volume)
-        }
-    }
-    deinit{
-        print("YPVideoCaptureVC deinit called")
-    }
-    func volumeTapped(volume : Float) {
-        
-        if volumeTap == 0 {
-            photoTimer?.invalidate()
-            print("123# photoTimer")
-            photoTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) {[weak self] (_) in
-                print("123# take photo")
-                
-                self?.doAfterPermissionCheck {
-//                    if self?.volumeTap == 1 {
-                        self?.shoot()
-//                    }
-
-                }
-            }
-        }
-        volumeTap += 1
-    }
-    
-var volumeTap = 0
-    
     func start() {
-        startvolumeButtonListener()
+        startVolumeListener()
         v.shotButton.isEnabled = false
         doAfterPermissionCheck { [weak self] in
             guard let strongSelf = self else {
@@ -166,10 +128,12 @@ var volumeTap = 0
         }
     }
     
+    
     public func stopCamera() {
-        VolumeListener.shared.remove()
+        stopVolumeListener()
         videoHelper.stopCamera()
     }
+    
     func refreshState() {
         // Init view state with video helper's state
         updateState {
@@ -200,16 +164,18 @@ var volumeTap = 0
             
             print("video long press  began" )
             self.doAfterPermissionCheck { [weak self] in
-                self?.toggleRecording()
+                self?.startRecording()
             }
             
         }  else if  gestureReconizer.state ==  .ended  {
             //When lognpress is finish
             if  videoHelper.isRecording == false{
-                
+                  doAfterPermissionCheck {[weak self] in
+                    self?.shoot()
+                }
             }else{
                 doAfterPermissionCheck { [weak self] in
-                    self?.toggleRecording()
+                    self?.stopRecording()
                 }
                 print("video long press  ended" )
             }
@@ -383,12 +349,93 @@ var volumeTap = 0
             return .noFlash
         }
     }
-}
-
-extension Date {
-
-    static func - (lhs: Date, rhs: Date) -> TimeInterval {
-        return lhs.timeIntervalSinceReferenceDate - rhs.timeIntervalSinceReferenceDate
+    
+    deinit{
+        print("YPVideoCaptureVC deinit called")
     }
-
+    
+    var photoTimer: Timer!
+    var videoTimer: Timer!
+    var volumeTap = 0
 }
+
+extension YPVideoCaptureVC {
+    
+    func startVolumeListener() {
+        VolumeListener.shared.add(containerView: self.view) {[weak self] volume in
+            self?.volumeTapped(volume : volume)
+        }
+    }
+    //when we remove the volume listener we will also re set the related vars
+    func volumeTapped(volume : Float) {
+        
+        var didStopVideoCalled = false
+        
+        if volumeTap == 0 {
+            v.shotButton.isUserInteractionEnabled = false
+            photoTimer?.invalidate()
+            
+            var havePermission = false
+            self.doAfterPermissionCheck { [weak self] in
+                havePermission = true
+                //                self?.toggleRecording()
+                if !didStopVideoCalled {
+                    self?.startRecording()
+                }
+                print("345@ start video 0")
+            }
+            
+            photoTimer = Timer.scheduledTimer(withTimeInterval: 0.35, repeats: false) {[weak self] (timer) in
+                if havePermission {
+                    self?.shoot()
+                }else{
+                    self?.doAfterPermissionCheck {
+                        self?.shoot()
+                    }
+                }
+                timer.invalidate()
+            }
+           
+            
+        }else if volumeTap > 0 {
+            rescheduledVideoTimer()
+            if photoTimer?.isValid == true{
+                photoTimer?.invalidate()
+            }
+          
+        }
+        
+        func rescheduledVideoTimer() {
+            print("345@ start video timer")
+            videoTimer?.invalidate()
+            
+            videoTimer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: false) {[weak self] (timer) in
+                    print("345@ stop video isRecording = ",self?.videoHelper.isRecording ?? false)
+                if self?.videoHelper.isRecording == true{
+                    self?.stopRecording()
+                }else{
+                    self?.doAfterPermissionCheck {
+                        self?.shoot()
+                    }
+                }
+                
+                didStopVideoCalled = true
+                print("stop video")
+                timer.invalidate()
+            }
+        }
+        
+        volumeTap += 1
+    }
+    
+    func stopVolumeListener() {
+        VolumeListener.shared.remove()
+        volumeTap = 0
+        photoTimer?.invalidate()
+        videoTimer?.invalidate()
+        photoTimer = nil
+        videoTimer = nil
+        v.shotButton.isUserInteractionEnabled = true
+    }
+}
+ 

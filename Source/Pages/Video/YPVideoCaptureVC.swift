@@ -331,13 +331,13 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
             circleView.layer.cornerRadius = ((size.width/2)-5)/2
             circleView.isUserInteractionEnabled = false
             v.shotButton.addSubview(circleView)
-            v.shotButton.bringSubviewToFront(circleView)
+            v.shotButton.sendSubviewToBack(circleView)
         }
          
             if state.isRecording {
                 UIView.animate(withDuration: 0.5, animations:{[weak self] in
-                    let scaleVal : CGFloat = 2.1
-                    self?.circleView?.transform = CGAffineTransform(scaleX: scaleVal, y: scaleVal) 
+                    let scaleVal : CGFloat = 2.2
+                    self?.circleView?.transform = CGAffineTransform(scaleX: scaleVal, y: scaleVal)
                     } )
             }else{
                 UIView.animate(withDuration: 0.5, animations: {[weak self] in

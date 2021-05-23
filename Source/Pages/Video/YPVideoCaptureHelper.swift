@@ -81,8 +81,8 @@ extension  YPVideoCaptureHelper :  YPPhotoCapture, AVCapturePhotoCaptureDelegate
         settings.isHighResolutionPhotoEnabled = true
         
         // Set flash mode.
-//        if let deviceInput = deviceInput {
-//            if deviceInput.device.isFlashAvailable {
+        if let deviceInput = deviceInput {
+            if deviceInput.device.isFlashAvailable {
                 switch currentTorchMode() {
                 case .auto:
                     if photoOutput.__supportedFlashModes.contains(NSNumber(value: AVCaptureDevice.FlashMode.auto.rawValue)) {
@@ -99,43 +99,12 @@ extension  YPVideoCaptureHelper :  YPPhotoCapture, AVCapturePhotoCaptureDelegate
                 @unknown default:
                     fatalError("currentTorchMode in correct")
                 }
-//            }
-//        }
+            }
+        }
         return settings
     }
-//    func setupPhotoCaptureSession() {
-////        session = AVCaptureSession()
-//
-//       session.beginConfiguration()
-//       session.sessionPreset = .photo
-//       let cameraPosition: AVCaptureDevice.Position = YPConfig.usesFrontCamera ? .front : .back
-//       let aDevice = deviceForPosition(cameraPosition)
-//       if let d = aDevice {
-//           deviceInput = try? AVCaptureDeviceInput(device: d)
-//       }
-//       if let videoInput = deviceInput {
-//           if session.canAddInput(videoInput) {
-//               session.addInput(videoInput)
-//           }
-//           if session.canAddOutput(output) {
-//               session.addOutput(output)
-//               configure()
-//           }
-//       }
-////        configure()
-//       session.commitConfiguration()
-//       isCaptureSessionSetup = true
-//   }
 }
-//////////
-///........
-////////////
-///////////
-////
-////
-////
-////
-////
+
 /// Abstracts Low Level AVFoudation details.
 class YPVideoCaptureHelper: NSObject {
     ///Image
@@ -404,22 +373,7 @@ class YPVideoCaptureHelper: NSObject {
     }
       func setupCaptureSession() {
         session.beginConfiguration()
-        ////
-//        let cameraPosition: AVCaptureDevice.Position = YPConfig.usesFrontCamera ? .front : .back
-//        let aDevice = deviceForPosition(.back)///deviceForPosition(cameraPosition)
-//        if let d = aDevice {
-//            deviceInput = try? AVCaptureDeviceInput(device: d)
-//        }
-//        if let videoInput = deviceInput {
-//            if session.canAddInput(videoInput) {
-//                session.addInput(videoInput)
-//            }
-//            if session.canAddOutput(output) {
-//                session.addOutput(output)
-//                configure()
-//            }
-//        }
-        ///
+       
         let aDevice = deviceForPosition(.back)
         if let d = aDevice {
             videoInput = try? AVCaptureDeviceInput(device: d)
@@ -548,15 +502,28 @@ extension YPVideoCaptureHelper: AVCaptureFileOutputRecordingDelegate {
         if let error = error {
             print(error)
         }
-
+        
+        let flipVideoIfFrontCamera : (_ outputFileURL: URL) -> Void = { [weak self] outputFileURL in
+            if self?.videoInput?.device.position == .front{
+                YPVideoProcessor.mirrorVideo(inputURL: outputFileURL) {[weak self] url in
+                    if let url = url {
+                        self?.didCaptureVideo?(url)
+                    }
+                }
+            }else{
+                self?.didCaptureVideo?(outputFileURL)
+            }
+        }
+        
         if YPConfig.onlySquareImagesFromCamera {
-            YPVideoProcessor.cropToSquare(filePath: outputFileURL) { [weak self] url in
-                guard let _self = self, let u = url else { return }
-                _self.didCaptureVideo?(u)
+            YPVideoProcessor.cropToSquare(filePath: outputFileURL) { url in
+                guard let url = url else { return }
+                flipVideoIfFrontCamera(url)
             }
         } else {
-            self.didCaptureVideo?(outputFileURL)
+            flipVideoIfFrontCamera(outputFileURL)
         }
+        
         timer.invalidate()
     }
 }

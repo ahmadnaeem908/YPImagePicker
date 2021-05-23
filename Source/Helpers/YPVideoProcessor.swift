@@ -106,4 +106,61 @@ class YPVideoProcessor {
             }
         }
     }
+     
+    static func mirrorVideo(inputURL: URL, completion: @escaping (_ outputURL : URL?) -> ()) {
+        let videoAsset: AVAsset = AVAsset( url: inputURL )
+        guard let clipVideoTrack = videoAsset.tracks( withMediaType: AVMediaType.video ).first else {
+            completion(nil)
+            return
+        }
+
+        let composition = AVMutableComposition()
+        composition.addMutableTrack(withMediaType: AVMediaType.video, preferredTrackID: CMPersistentTrackID())
+
+        let videoComposition = AVMutableVideoComposition()
+        videoComposition.renderSize = CGSize(width: clipVideoTrack.naturalSize.height, height: clipVideoTrack.naturalSize.width)
+        videoComposition.frameDuration = CMTimeMake(value: 1, timescale: 30)
+
+        let transformer = AVMutableVideoCompositionLayerInstruction(assetTrack: clipVideoTrack)
+
+        let instruction = AVMutableVideoCompositionInstruction()
+        instruction.timeRange = CMTimeRangeMake(start: CMTime.zero, duration: CMTimeMakeWithSeconds(60, preferredTimescale: 30))
+        var transform:CGAffineTransform = CGAffineTransform(scaleX: -1.0, y: 1.0)
+        transform = transform.translatedBy(x: -clipVideoTrack.naturalSize.width, y: 0.0)
+        transform = transform.rotated(by: CGFloat(Double.pi/2))
+        transform = transform.translatedBy(x: 0.0, y: -clipVideoTrack.naturalSize.width)
+
+        transformer.setTransform(transform, at: CMTime.zero)
+
+        instruction.layerInstructions = [transformer]
+        videoComposition.instructions = [instruction]
+
+        // Export
+
+        guard  let exportSession = AVAssetExportSession(asset: videoAsset, presetName: AVAssetExportPresetHighestQuality) else{
+            completion(nil)
+            return
+        }
+         
+        let filePath = makeVideoPathURL(temporaryFolder: true, fileName: "mirrorVideoFromFrontCamera")
+
+        let croppedOutputFileUrl = filePath
+        exportSession.outputURL = croppedOutputFileUrl
+        exportSession.outputFileType = AVFileType.mov
+        exportSession.videoComposition = videoComposition
+        exportSession.exportAsynchronously {
+            if exportSession.status == .completed {
+                DispatchQueue.main.async(execute: {
+                    completion(croppedOutputFileUrl)
+                })
+                return
+            } else if exportSession.status == .failed {
+                print("Export failed - \(String(describing: exportSession.error))")
+            }
+
+            completion(nil)
+            return
+        }
+    }
+  
 }

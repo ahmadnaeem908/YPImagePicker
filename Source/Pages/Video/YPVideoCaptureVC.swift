@@ -336,7 +336,8 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
          
             if state.isRecording {
                 UIView.animate(withDuration: 0.5, animations:{[weak self] in
-                    self?.circleView?.transform = CGAffineTransform(scaleX: 2.5, y: 2.5)
+                    let scaleVal : CGFloat = 2.1
+                    self?.circleView?.transform = CGAffineTransform(scaleX: scaleVal, y: scaleVal) 
                     } )
             }else{
                 UIView.animate(withDuration: 0.5, animations: {[weak self] in

@@ -305,6 +305,9 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
         updateUIWith(state: viewState)
     }
     
+    var circleView  : UIView!
+    
+
     private func updateUIWith(state: ViewState) {
         func flashImage(for torchMode: FlashMode) -> UIImage {
             switch torchMode {
@@ -317,8 +320,30 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
         v.flashButton.setImage(flashImage(for: state.flashMode), for: .normal)
         v.flashButton.isEnabled = !state.isRecording
         v.flashButton.isHidden = state.flashMode == .noFlash
-        v.shotButton.setImage(state.isRecording ? YPConfig.icons.captureVideoOnImage : YPConfig.icons.captureVideoImage,
-                              for: .normal)
+        
+       
+        if circleView == nil {
+            let size = v.shotButton.frame.size
+            circleView = UIView(frame  : CGRect(x: 0, y: 0, width:  (size.width/2)-5, height:  (size.height/2)-5 ) )
+            circleView.center = CGPoint(x: size.width / 2,
+                                        y: size.height / 2)
+            circleView.backgroundColor = #colorLiteral(red: 0.7647058824, green: 0, blue: 1, alpha: 1)
+            circleView.layer.cornerRadius = ((size.width/2)-5)/2
+            circleView.isUserInteractionEnabled = false
+            v.shotButton.addSubview(circleView)
+            v.shotButton.bringSubviewToFront(circleView)
+        }
+         
+            if state.isRecording {
+                UIView.animate(withDuration: 0.5, animations:{[weak self] in
+                    self?.circleView?.transform = CGAffineTransform(scaleX: 2.5, y: 2.5)
+                    } )
+            }else{
+                UIView.animate(withDuration: 0.5, animations: {[weak self] in
+                    self?.circleView?.transform = .identity
+                })
+            }
+        
         v.flipButton.isEnabled = !state.isRecording
         v.progressBar.progress = state.progress
         v.timeElapsedLabel.text = YPHelper.formattedStrigFrom(state.timeElapsed)

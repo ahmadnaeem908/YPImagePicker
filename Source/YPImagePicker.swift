@@ -134,6 +134,10 @@ override open func viewDidLoad() {
                     showCropVC(photo: photo, completion: completion)
                 }
             case .video(let video):
+                if self?.viewControllers.count ?? 0 > 1{
+                   return
+                    //so if the video and photo were taken at the same time we can just use the photo editor not the video
+                }
                 if YPConfig.showsVideoTrimmer {
                     let videoFiltersVC = YPVideoFiltersVC.initWith(video: video,
                                                                    isFromSelectionVC: false)

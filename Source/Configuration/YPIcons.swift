@@ -24,7 +24,9 @@ public struct YPIcons {
     public var multipleSelectionOnIcon: UIImage = imageFromBundle("yp_multiple_colored")
     public var capturePhotoImage: UIImage = imageFromBundle("yp_iconCapture")
     public var captureVideoImage: UIImage = imageFromBundle("yp_iconVideoCapture")
-    public var captureVideoOnImage: UIImage = imageFromBundle("yp_iconVideoCaptureRecording")
+//    public var captureVideoOnImage: UIImage = imageFromBundle("yp_iconVideoCaptureRecording")
+    public var captureVideoOnImage: UIImage = imageFromBundle("yp_iconVideoCaptureSpeaker")
+    
     public var playImage: UIImage = imageFromBundle("yp_play")
     public var removeImage: UIImage = imageFromBundle("yp_remove")
 }

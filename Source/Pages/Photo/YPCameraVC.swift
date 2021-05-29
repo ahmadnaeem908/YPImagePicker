@@ -42,7 +42,8 @@ public class YPCameraVC: UIViewController, UIGestureRecognizerDelegate, YPPermis
         v.flashButton.addTarget(self, action: #selector(flashButtonTapped), for: .touchUpInside)
         v.shotButton.addTarget(self, action: #selector(shotButtonTapped), for: .touchUpInside)
         v.flipButton.addTarget(self, action: #selector(flipButtonTapped), for: .touchUpInside)
-        
+        v.dismissButton.addTarget(self, action: #selector(dismissVC), for: .touchUpInside)
+
         // Focus
         let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(self.focusTapped(_:)))
         tapRecognizer.delegate = self
@@ -54,6 +55,10 @@ public class YPCameraVC: UIViewController, UIGestureRecognizerDelegate, YPPermis
         v.previewViewContainer.addGestureRecognizer(pinchRecongizer)
     }
     
+    @objc
+    func dismissVC() {
+        self.navigationController?.dismiss(animated: true)
+    }
     func start() {
         doAfterPermissionCheck { [weak self] in
             guard let strongSelf = self else {

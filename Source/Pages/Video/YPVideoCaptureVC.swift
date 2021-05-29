@@ -154,11 +154,16 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
         v.flashButton.addTarget(self, action: #selector(flashButtonTapped), for: .touchUpInside)
         v.shotButton.addTarget(self, action: #selector(shotButtonTapped), for: .touchUpInside)
         v.flipButton.addTarget(self, action: #selector(flipButtonTapped), for: .touchUpInside)
+        v.dismissButton.addTarget(self, action: #selector(dismissVC), for: .touchUpInside)
         
         let longGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress))
         v.shotButton.addGestureRecognizer(longGesture)
     }
     
+    @objc
+    func dismissVC() {
+        self.navigationController?.dismiss(animated: true)
+    }
     @objc func handleLongPress(gestureReconizer: UILongPressGestureRecognizer) {
         if gestureReconizer.state ==  .began {
             

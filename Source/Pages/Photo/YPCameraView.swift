@@ -17,6 +17,7 @@ class YPCameraView: UIView, UIGestureRecognizerDelegate {
     let flipButton = UIButton()
     let shotButton = UIButton()
     let flashButton = UIButton()
+    let dismissButton = UIButton()
     let timeElapsedLabel = UILabel()
     let progressBar = UIProgressView()
 
@@ -29,6 +30,7 @@ class YPCameraView: UIView, UIGestureRecognizerDelegate {
                 previewViewContainer,
                 overlayView,
                 progressBar,
+                dismissButton,
                 timeElapsedLabel,
                 flashButton,
                 flipButton,
@@ -42,6 +44,7 @@ class YPCameraView: UIView, UIGestureRecognizerDelegate {
                 previewViewContainer,
                 progressBar,
                 timeElapsedLabel,
+                dismissButton,
                 flashButton,
                 flipButton,
                 buttonsContainer.sv(
@@ -82,7 +85,11 @@ class YPCameraView: UIView, UIGestureRecognizerDelegate {
         }
 
         overlayView?.followEdges(previewViewContainer)
-
+        
+        
+        |-(0+sideMargin)-dismissButton.size(80)
+        dismissButton.Top == previewViewContainer.Top ///+ 10
+//        dismissButton.size(50)
         |-(15+sideMargin)-flashButton.size(42)
         flashButton.Bottom == previewViewContainer.Bottom - 15
 
@@ -111,5 +118,12 @@ class YPCameraView: UIView, UIGestureRecognizerDelegate {
         flashButton.setImage(YPConfig.icons.flashOffIcon, for: .normal)
         flipButton.setImage(YPConfig.icons.loopIcon, for: .normal)
         shotButton.setImage(YPConfig.icons.capturePhotoImage, for: .normal)
+  
+  
+        let largeConfig = UIImage.SymbolConfiguration(pointSize: 25, weight: .semibold, scale: .large)
+        let dissmissImage =  UIImage(systemName: "xmark", withConfiguration: largeConfig)
+        dismissButton.tintColor = .white
+        dismissButton.setImage( dissmissImage, for: .normal)
+        dismissButton.backgroundColor = UIColor.white.withAlphaComponent(0.01)
     }
 }

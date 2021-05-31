@@ -153,7 +153,7 @@ override open func viewDidLoad() {
     }
     
     deinit {
-        print("Picker deinited 👍")
+//        print("Picker deinited 👍")
     }
     
     private func setupLoadingView() {

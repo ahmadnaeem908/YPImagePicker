@@ -38,6 +38,7 @@ public class YPCameraVC: UIViewController, UIGestureRecognizerDelegate, YPPermis
     
     override public func viewDidLoad() {
         super.viewDidLoad()
+         navigationController?.setNavigationBarHidden(true, animated: false) 
         v.flashButton.isHidden = true
         v.flashButton.addTarget(self, action: #selector(flashButtonTapped), for: .touchUpInside)
         v.shotButton.addTarget(self, action: #selector(shotButtonTapped), for: .touchUpInside)

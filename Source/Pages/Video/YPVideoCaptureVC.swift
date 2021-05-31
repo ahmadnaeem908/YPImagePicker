@@ -95,6 +95,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     
     override public func viewDidLoad() {
         super.viewDidLoad()
+        navigationController?.setNavigationBarHidden(true, animated: false) 
         v.timeElapsedLabel.isHidden = false // Show the time elapsed label since we're in the video screen.
         setupButtons()
         linkButtons()

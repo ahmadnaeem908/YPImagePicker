@@ -9,6 +9,7 @@
 import UIKit
 import AVFoundation
 import CoreMotion
+
 extension  YPVideoCaptureHelper :  YPPhotoCapture, AVCapturePhotoCaptureDelegate{
     func tryToggleFlash() {
         // if device.hasFlash device.isFlashAvailable //TODO test these
@@ -502,19 +503,20 @@ extension YPVideoCaptureHelper: AVCaptureFileOutputRecordingDelegate {
         if let error = error {
             print(error)
         }
+       
         
         let flipVideoIfFrontCamera : (_ outputFileURL: URL) -> Void = { [weak self] outputFileURL in
             if self?.videoInput?.device.position == .front{
                 YPVideoProcessor.mirrorVideo(inputURL: outputFileURL) {[weak self] url in
                     if let url = url {
-                        self?.didCaptureVideo?(url)
+                        self?.sendVideoBackInClouser(url)
                     }
                 }
             }else{
-                self?.didCaptureVideo?(outputFileURL)
+                self?.sendVideoBackInClouser(outputFileURL)
             }
         }
-        
+        /**/
         if YPConfig.onlySquareImagesFromCamera {
             YPVideoProcessor.cropToSquare(filePath: outputFileURL) { url in
                 guard let url = url else { return }
@@ -526,4 +528,57 @@ extension YPVideoCaptureHelper: AVCaptureFileOutputRecordingDelegate {
         
         timer.invalidate()
     }
+   
+        
+    private func sendVideoBackInClouser (_ url : URL)  {
+        let resolution =  resolutionForLocalVideo(url: url)!
+        let resolutionRatio = resolution.width / resolution.height
+        let screenRatio = UIScreen.width / UIScreen.height
+        
+        if !resolutionRatio.isEqual(to: screenRatio, tilFloatingPoints: 3){
+            let newResolutionWidth  = (screenRatio*resolution.height)
+            let newCalculatedSize = CGSize(width: newResolutionWidth, height: resolution.height)
+            let widthDifference = resolution.width - newResolutionWidth
+
+            print("resolution ,", resolution)
+            print("screenRatio ", screenRatio)
+            print("resolutionRatio ",resolutionRatio)
+            print("newResolutionWidth , =", newResolutionWidth)
+            print("newSize , =", newCalculatedSize)
+            print("widthDifference , =", widthDifference)
+
+            YPVideoProcessor.cropTo(newSize: newCalculatedSize, url, widthDifference: widthDifference) {[weak self] newURL in
+                if let newURL = newURL{
+                    self?.didCaptureVideo?(newURL)
+                }else{
+                    self?.didCaptureVideo?(url)
+                }
+            }
+        }else{
+            didCaptureVideo?(url)
+        }
+    }
+    
+    private func resolutionForLocalVideo(url: URL) -> CGSize? {
+        guard let track = AVURLAsset(url: url).tracks(withMediaType: AVMediaType.video).first else { return nil }
+       let size = track.naturalSize.applying(track.preferredTransform)
+       return CGSize(width: abs(size.width), height: abs(size.height))
+    }
 }
+extension  CGFloat {
+    func isEqual(to other : CGFloat,tilFloatingPoints num: Int) -> Bool{
+        var points : CGFloat = 1.0
+        for _ in 0..<num{ points *= 10  }
+     return Int(self*points) == Int(other*points)
+    }
+}
+
+extension UIScreen {
+ static var width : CGFloat {
+      return UIScreen.main.bounds.width
+  }
+ static var height : CGFloat {
+      return UIScreen.main.bounds.height
+  }
+}
+ 

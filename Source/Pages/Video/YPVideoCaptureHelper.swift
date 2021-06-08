@@ -531,32 +531,32 @@ extension YPVideoCaptureHelper: AVCaptureFileOutputRecordingDelegate {
    
         
     private func sendVideoBackInClouser (_ url : URL)  {
-        let resolution =  resolutionForLocalVideo(url: url)!
-        let resolutionRatio = resolution.width / resolution.height
-        let screenRatio = UIScreen.width / UIScreen.height
-        
-        if !resolutionRatio.isEqual(to: screenRatio, tilFloatingPoints: 3){
-            let newResolutionWidth  = (screenRatio*resolution.height)
-            let newCalculatedSize = CGSize(width: newResolutionWidth, height: resolution.height)
-            let widthDifference = resolution.width - newResolutionWidth
-
-            print("resolution ,", resolution)
-            print("screenRatio ", screenRatio)
-            print("resolutionRatio ",resolutionRatio)
-            print("newResolutionWidth , =", newResolutionWidth)
-            print("newSize , =", newCalculatedSize)
-            print("widthDifference , =", widthDifference)
-
-            YPVideoProcessor.cropTo(newSize: newCalculatedSize, url, widthDifference: widthDifference) {[weak self] newURL in
-                if let newURL = newURL{
-                    self?.didCaptureVideo?(newURL)
-                }else{
-                    self?.didCaptureVideo?(url)
-                }
-            }
-        }else{
+//        let resolution =  resolutionForLocalVideo(url: url)!
+//        let resolutionRatio = resolution.width / resolution.height
+//        let screenRatio = UIScreen.width / UIScreen.height
+//        
+//        if !resolutionRatio.isEqual(to: screenRatio, tilFloatingPoints: 3){
+//            let newResolutionWidth  = (screenRatio*resolution.height)
+//            let newCalculatedSize = CGSize(width: newResolutionWidth, height: resolution.height)
+//            let widthDifference = resolution.width - newResolutionWidth
+//
+//            print("resolution ,", resolution)
+//            print("screenRatio ", screenRatio)
+//            print("resolutionRatio ",resolutionRatio)
+//            print("newResolutionWidth , =", newResolutionWidth)
+//            print("newSize , =", newCalculatedSize)
+//            print("widthDifference , =", widthDifference)
+//
+//            YPVideoProcessor.cropTo(newSize: newCalculatedSize, url, widthDifference: widthDifference) {[weak self] newURL in
+//                if let newURL = newURL{
+//                    self?.didCaptureVideo?(newURL)
+//                }else{
+//                    self?.didCaptureVideo?(url)
+//                }
+//            }
+//        }else{
             didCaptureVideo?(url)
-        }
+//        }
     }
     
     private func resolutionForLocalVideo(url: URL) -> CGSize? {

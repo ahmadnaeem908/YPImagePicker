@@ -311,17 +311,18 @@ class YPVideoCaptureHelper: NSObject {
         
         let outputURL = YPVideoProcessor.makeVideoPathURL(temporaryFolder: true, fileName: "recordedVideoRAW")
 
-        checkOrientation { [weak self] orientation in
-            guard let strongSelf = self else {
-                return
-            }
-            if let connection = strongSelf.videoOutput.connection(with: .video) {
-                if let orientation = orientation, connection.isVideoOrientationSupported {
-                    connection.videoOrientation = orientation
-                }
-                strongSelf.videoOutput.startRecording(to: outputURL, recordingDelegate: strongSelf)
-            }
-        }
+//        checkOrientation { [weak self] orientation in
+//            guard let strongSelf = self else {
+//                return
+//            }
+//            if let connection = strongSelf.videoOutput.connection(with: .video) {
+//                if let orientation = orientation, connection.isVideoOrientationSupported {
+//                    connection.videoOrientation = orientation
+//                }
+//                strongSelf.videoOutput.startRecording(to: outputURL, recordingDelegate: strongSelf)
+//            }
+//        }
+        videoOutput.startRecording(to: outputURL, recordingDelegate: self) 
     }
     
     public func stopRecording() {
@@ -534,7 +535,7 @@ extension YPVideoCaptureHelper: AVCaptureFileOutputRecordingDelegate {
 //        let resolution =  resolutionForLocalVideo(url: url)!
 //        let resolutionRatio = resolution.width / resolution.height
 //        let screenRatio = UIScreen.width / UIScreen.height
-//        
+//
 //        if !resolutionRatio.isEqual(to: screenRatio, tilFloatingPoints: 3){
 //            let newResolutionWidth  = (screenRatio*resolution.height)
 //            let newCalculatedSize = CGSize(width: newResolutionWidth, height: resolution.height)

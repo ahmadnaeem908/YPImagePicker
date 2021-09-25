@@ -251,6 +251,10 @@ public struct YPConfigVideo {
     /// In bytes. 100000000 is 100 MB.
     /// AVCaptureMovieFileOutput.maxRecordedFileSize.
     public var recordingSizeLimit: Int64?
+    
+    /// Defines the size limit in bytes for Library videos.
+    /// In bytes. 100000000 is 100 MB. 
+    public var libraryVideoSizeLimit: Int64 = 64*1000*1000
 
     /// Minimum free space when recording videos.
     /// AVCaptureMovieFileOutput.minFreeDiskSpaceLimit.

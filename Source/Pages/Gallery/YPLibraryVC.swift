@@ -566,6 +566,9 @@ public class YPLibraryVC: UIViewController, YPPermissionCheckable {
                         DispatchQueue.main.async {
                             if let videoURL = videoURL {
                                 self.delegate?.libraryViewFinishedLoading()
+                                guard self.checkVideoSizeLimits(url: videoURL) else {
+                                    return
+                                }
                                 let video = YPMediaVideo(thumbnail: thumbnailFromVideoPath(videoURL),
                                                          videoURL: videoURL, asset: asset)
                                 videoCallback(video)
@@ -613,5 +616,40 @@ public class YPLibraryVC: UIViewController, YPPermissionCheckable {
     
     deinit {
         PHPhotoLibrary.shared().unregisterChangeObserver(self)
+    }
+}
+extension YPLibraryVC {
+private func checkVideoSizeLimits(url: URL) -> Bool {
+    if url.fileSize > YPConfig.video.libraryVideoSizeLimit {
+        DispatchQueue.main.async {
+            let alert =  YPAlert.videoSize64MBAlert(self.view)
+            self.present(alert, animated: true, completion: nil)
+        }
+        return false
+    }
+    return true
+}
+    
+}
+extension URL {
+    var attributes: [FileAttributeKey : Any]? {
+        do {
+            return try FileManager.default.attributesOfItem(atPath: path)
+        } catch let error as NSError {
+            print("FileAttribute error: \(error)")
+        }
+        return nil
+    }
+
+    var fileSize: UInt64 {
+        return attributes?[.size] as? UInt64 ?? UInt64(0)
+    }
+
+    var fileSizeString: String {
+        return ByteCountFormatter.string(fromByteCount: Int64(fileSize), countStyle: .file)
+    }
+
+    var creationDate: Date? {
+        return attributes?[.creationDate] as? Date
     }
 }

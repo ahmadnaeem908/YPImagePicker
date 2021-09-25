@@ -12,6 +12,7 @@ public struct YPWordings {
     
     public var permissionPopup = PermissionPopup()
     public var videoDurationPopup = VideoDurationPopup()
+    public var videoSizeLimitPopup = VideoSizeLimitPopup()
 
     public struct PermissionPopup {
         public var title = ypLocalized("YPImagePickerPermissionDeniedPopupTitle")
@@ -41,4 +42,11 @@ public struct YPWordings {
     public var filter = ypLocalized("YPImagePickerFilter")
     public var crop = ypLocalized("YPImagePickerCrop")
     public var warningMaxItemsLimit = ypLocalized("YPImagePickerWarningItemsLimit")
+}
+
+extension  YPWordings {
+    public struct VideoSizeLimitPopup {
+        public var videSize64MbMessage = "The video can not be larger then %@ in size."
+        public var title = "Video Size"
+    }
 }

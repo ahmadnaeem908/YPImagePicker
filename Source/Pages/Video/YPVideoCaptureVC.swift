@@ -112,7 +112,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     
    
     func start() {
-        startVolumeListener()
+//        startVolumeListener()
         v.shotButton.isEnabled = false
         doAfterPermissionCheck { [weak self] in
             guard let strongSelf = self else {
@@ -131,7 +131,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     
     
     public func stopCamera() {
-        stopVolumeListener()
+//        stopVolumeListener()
         videoHelper.stopCamera()
     }
     

@@ -104,7 +104,12 @@ class YPCameraView: UIView, UIGestureRecognizerDelegate {
 
         // Style
         backgroundColor = YPConfig.colors.photoVideoScreenBackgroundColor
-        previewViewContainer.backgroundColor = UIColor.ypLabel
+//        previewViewContainer.backgroundColor = UIColor.ypLabel
+        if #available(iOS 13, *) {
+            previewViewContainer.backgroundColor = UIColor.systemBackground
+        }else{
+            previewViewContainer.backgroundColor = UIColor.ypLabel
+        }
         timeElapsedLabel.style { l in
             l.textColor = .white
             l.text = "00:00"

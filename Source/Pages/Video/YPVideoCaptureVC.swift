@@ -15,6 +15,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     private let videoHelper = YPVideoCaptureHelper()
     private let v = YPCameraView(overlayView: nil)
     private var viewState = ViewState()
+    private var activityView: UIActivityIndicatorView?
     
     // MARK: - Init
     
@@ -24,6 +25,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
         super.init(nibName: nil, bundle: nil)
         title = YPConfig.wordings.videoTitle
         videoHelper.didCaptureVideo = { [weak self] videoURL in
+            self?.hideActivityIndicator()
             self?.didCaptureVideo?(videoURL)
             self?.resetVisualState()
         }
@@ -95,7 +97,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     
     override public func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.setNavigationBarHidden(true, animated: false) 
+        navigationController?.setNavigationBarHidden(true, animated: false)
         v.timeElapsedLabel.isHidden = false // Show the time elapsed label since we're in the video screen.
         setupButtons()
         linkButtons()
@@ -107,7 +109,6 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
         // Zoom
         let pinchRecongizer = UIPinchGestureRecognizer(target: self, action: #selector(self.pinch(_:)))
         v.previewViewContainer.addGestureRecognizer(pinchRecongizer)
-         
     }
     
    
@@ -166,8 +167,10 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
         self.navigationController?.dismiss(animated: true)
     }
     @objc func handleLongPress(gestureReconizer: UILongPressGestureRecognizer) {
+        guard activityView == nil else { return  }
+        
         if gestureReconizer.state ==  .began {
-            
+            hideActivityIndicator()
             print("video long press  began" )
             self.doAfterPermissionCheck { [weak self] in
                 self?.startRecording()
@@ -180,6 +183,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
                     self?.shoot()
                 }
             }else{
+                showActivityIndicator()
                 doAfterPermissionCheck { [weak self] in
                     self?.stopRecording()
                 }
@@ -188,6 +192,23 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
             
         }
         
+    }
+    // MARK: -  Camera ActivityIndicator
+    func showActivityIndicator() {
+      let  activityView = UIActivityIndicatorView(style: .large)
+        activityView.color = YPConfig.colors.cameraVideoActivityIndicatorColor
+        activityView.center = CGPoint(x: UIScreen.width/2, y:  (UIScreen.height/2)-20)
+        self.view.addSubview(activityView)
+        self.view.bringSubviewToFront(activityView)
+        activityView.startAnimating()
+        self.activityView = activityView
+    }
+
+    func hideActivityIndicator(){
+        if (activityView != nil){
+            activityView?.stopAnimating()
+            activityView = nil
+        }
     }
     // MARK: - Flip Camera
     
@@ -220,6 +241,7 @@ public class YPVideoCaptureVC: UIViewController, YPPermissionCheckable {
     
     @objc
     func shotButtonTapped() {
+        guard activityView == nil else { return  }
 //        doAfterPermissionCheck { [weak self] in
 //            self?.toggleRecording()
 //        }
